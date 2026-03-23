@@ -5,11 +5,11 @@ A web app using Rocket.rs
 
 9 widgets in a 3 by 3 grid
 
-| 1 | 2 | 3 |
+| 9 | 1 | 8 |
 | - | - | - |
 | 4 | 5 | 6 |
 | - | - | - |
-| 7 | 8 | 9 |
+| 7 | 3 | 2 |
 
 
 Data for each is loaded with jQuery calls to backend.

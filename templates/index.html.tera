@@ -85,6 +85,18 @@
     .weather-source { font-size: 0.78rem; margin-top: 0.4rem; }
     .weather-source-live { color: #66bb6a; }
     .weather-source-fallback { color: #ffa726; }
+
+    @media (min-width: 992px) {
+      .dashboard-widget-duck { order: 1; }
+      .dashboard-widget-wazuh { order: 2; }
+      .dashboard-widget-weather { order: 3; }
+      .dashboard-widget-atera { order: 4; }
+      .dashboard-widget-vipre { order: 5; }
+      .dashboard-widget-backup { order: 6; }
+      .dashboard-widget-ad { order: 7; }
+      .dashboard-widget-ncentral { order: 8; }
+      .dashboard-widget-veeam { order: 9; }
+    }
   </style>
 </head>
 <body>
@@ -93,7 +105,7 @@
   <div class="row g-3">
 
     <!-- Widget 1: Wazuh -->
-    <div class="col-4">
+    <div class="col-4 dashboard-widget-wazuh">
       <div class="widget">
         <h6>Wazuh</h6>
         <div class="d-flex flex-wrap gap-3 mb-3">
@@ -119,7 +131,7 @@
     </div>
 
     <!-- Widget 2: Atera -->
-    <div class="col-4">
+    <div class="col-4 dashboard-widget-atera">
       <div class="widget">
         <h6>Atera</h6>
         <div class="d-flex gap-4 mb-3">
@@ -141,7 +153,7 @@
     </div>
 
     <!-- Widget 3: Vipre AV -->
-    <div class="col-4">
+    <div class="col-4 dashboard-widget-vipre">
       <div class="widget">
         <h6>Vipre AV</h6>
         <div class="d-flex flex-wrap gap-3 mb-3">
@@ -167,7 +179,7 @@
     </div>
 
     <!-- Widget 4: Backup -->
-    <div class="col-4">
+    <div class="col-4 dashboard-widget-backup">
       <div class="widget">
         <h6>Backup Status</h6>
         <canvas id="backupChart"></canvas>
@@ -175,7 +187,7 @@
     </div>
 
     <!-- Widget 5: AD Metrics -->
-    <div class="col-4">
+    <div class="col-4 dashboard-widget-ad">
       <div class="widget">
         <h6>AD Metrics</h6>
         <div class="d-flex gap-4 mb-3">
@@ -193,7 +205,7 @@
     </div>
 
     <!-- Widget 6: N-central -->
-    <div class="col-4">
+    <div class="col-4 dashboard-widget-ncentral">
       <div class="widget">
         <h6>N-central Alerts</h6>
         <div class="table-responsive">
@@ -215,7 +227,7 @@
     </div>
 
     <!-- Widget 7: Veeam -->
-    <div class="col-4">
+    <div class="col-4 dashboard-widget-veeam">
       <div class="widget">
         <h6>Veeam Jobs</h6>
         <canvas id="veeamChart"></canvas>
@@ -223,7 +235,7 @@
     </div>
 
     <!-- Widget 8: Weather -->
-    <div class="col-4">
+    <div class="col-4 dashboard-widget-weather">
       <div class="widget weather-widget">
         <h6>Weather</h6>
         <div class="weather-icon" id="weather-icon">☁️</div>
@@ -238,7 +250,7 @@
     </div>
 
     <!-- Widget 9: Duck Date/Time -->
-    <div class="col-4">
+    <div class="col-4 dashboard-widget-duck">
       <div class="widget duck-widget">
         <h6>Date &amp; Time</h6>
         <div class="duck-emoji">🦆</div>
@@ -269,7 +281,7 @@
   const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
   const pieColors = {
-    green:  '#4caf50',
+    green:  '#008040',
     yellow: '#ffeb3b',
     orange: '#ff9800',
     red:    '#f44336',
