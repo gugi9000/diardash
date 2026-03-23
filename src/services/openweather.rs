@@ -18,8 +18,12 @@ pub async fn fetch_payload() -> Result<Value, String> {
     let (api_key, api_key_source) = read_api_key().ok_or_else(|| {
         String::from("Missing API key in .env (tried OPENWEATHER_API_KEY, OPENWEATHER_KEY, API_KEY)")
     })?;
+    let debug: String = env::var("DEBUG").unwrap_or_default();
 
-    log_api_key_once(api_key_source, &api_key);
+    if debug == "true" {
+        eprintln!("Weather debug: resolved coordinates lat={DEFAULT_LAT}, lon={DEFAULT_LON}");
+        log_api_key_once(api_key_source, &api_key);
+    }
 
     let client = reqwest::Client::new();
 
