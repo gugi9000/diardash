@@ -82,6 +82,9 @@
     .weather-widget { align-items: center; justify-content: center; text-align: center; }
     .weather-temp { font-size: 3rem; font-weight: 700; }
     .weather-icon { font-size: 3rem; }
+    .weather-source { font-size: 0.78rem; margin-top: 0.4rem; }
+    .weather-source-live { color: #66bb6a; }
+    .weather-source-fallback { color: #ffa726; }
   </style>
 </head>
 <body>
@@ -226,6 +229,7 @@
         <div class="weather-icon" id="weather-icon">☁️</div>
         <div class="weather-temp" id="weather-temp">—°C</div>
         <div class="stat-label mt-1" id="weather-condition">—</div>
+        <div class="weather-source" id="weather-source">⏳ Waiting for weather source</div>
         <div class="d-flex gap-3 mt-2 justify-content-center" style="font-size:0.85rem;">
           <span>💧 <span id="weather-humidity">—</span>%</span>
           <span>🌬 <span id="weather-wind">—</span> km/h</span>
@@ -596,11 +600,21 @@
   };
   async function loadWeather() {
     const d = await fetchJson('/api/weather');
+    const sourceElement = document.getElementById('weather-source');
     document.getElementById('weather-icon').textContent      = weatherIcons[d.icon] || '🌡️';
     document.getElementById('weather-temp').textContent      = `${d.temperature_c}°C`;
     document.getElementById('weather-condition').textContent = d.condition;
     document.getElementById('weather-humidity').textContent  = d.humidity_pct;
     document.getElementById('weather-wind').textContent      = d.wind_kmh;
+
+    sourceElement.classList.remove('weather-source-live', 'weather-source-fallback');
+    if (d.fallback_used) {
+      sourceElement.classList.add('weather-source-fallback');
+      sourceElement.textContent = `⚠️ Fallback in use (${d.source || 'mock'})`;
+    } else {
+      sourceElement.classList.add('weather-source-live');
+      sourceElement.textContent = `✅ Live source (${d.source || 'openweather'})`;
+    }
   }
 
   // ── Datetime ──────────────────────────────────────────────────────────────

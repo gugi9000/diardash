@@ -1,7 +1,12 @@
 #[macro_use]
 extern crate rocket;
 
-use diardash::{
+mod mocks;
+mod routes;
+mod services;
+mod weather_payload;
+
+use crate::routes::{
     get_ad_metrics, get_atera_data, get_backup_status, get_datetime, get_ncentral_alerts,
     get_veeam_jobs, get_vipre_data, get_wazuh_alerts, get_weather, index,
 };
