@@ -1,3 +1,4 @@
+use chrono::Local;
 use rocket::serde::json::{Json, Value};
 use rocket_dyn_templates::{context, Template};
 use serde_json::json;
@@ -12,15 +13,20 @@ pub fn index() -> Template {
 #[rocket::get("/api/wazuh")]
 pub fn get_wazuh_alerts() -> Json<Value> {
     Json(json!({
-        "count": {"critical": 44, "high": 5},
+        "count": {
+            "critical": 44,
+            "high": 5,
+            "active_devices": 412,
+            "disconnected_devices": 37
+        },
         "history": [
-            {"day": "Mon", "critical": 44, "high": 5},
-            {"day": "Tue", "critical": 38, "high": 7},
-            {"day": "Wed", "critical": 41, "high": 3},
-            {"day": "Thu", "critical": 50, "high": 9},
-            {"day": "Fri", "critical": 33, "high": 4},
-            {"day": "Sat", "critical": 29, "high": 2},
-            {"day": "Sun", "critical": 44, "high": 5}
+            {"day": "Mon", "critical": 44, "high": 5, "active_devices": 406, "disconnected_devices": 34},
+            {"day": "Tue", "critical": 38, "high": 7, "active_devices": 398, "disconnected_devices": 41},
+            {"day": "Wed", "critical": 41, "high": 3, "active_devices": 421, "disconnected_devices": 29},
+            {"day": "Thu", "critical": 50, "high": 9, "active_devices": 415, "disconnected_devices": 35},
+            {"day": "Fri", "critical": 33, "high": 4, "active_devices": 409, "disconnected_devices": 32},
+            {"day": "Sat", "critical": 29, "high": 2, "active_devices": 401, "disconnected_devices": 28},
+            {"day": "Sun", "critical": 44, "high": 5, "active_devices": 412, "disconnected_devices": 37}
         ]
     }))
 }
@@ -138,9 +144,12 @@ pub fn get_weather() -> Json<Value> {
 // Widget 9 — Duck: current date and time
 #[rocket::get("/api/datetime")]
 pub fn get_datetime() -> Json<Value> {
+    let now = Local::now();
+
     Json(json!({
-        "date": "Monday, March 23 2026",
-        "time": "14:32:07"
+        "timestamp": now.to_rfc3339(),
+        "date": now.format("%A, %B %-d %Y").to_string(),
+        "time": now.format("%H:%M:%S").to_string()
     }))
 }
 

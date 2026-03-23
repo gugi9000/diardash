@@ -28,8 +28,11 @@ Data for each is loaded with jQuery calls to backend.
 ## Wazuh
 - critical alerts
 - high alerts
+* active devices
+* disconnected devices
 
-And a stacked bar graph for the highest value for each over the last 7 days per day
+And a stacked bar graph for the highest value for active and disconnected device over the last 7 days per day.
+Overlaid with a line graph of critical and high alerts.
 
 Updates hourly
 

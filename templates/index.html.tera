@@ -39,6 +39,43 @@
     .duck-emoji { font-size: 4rem; }
     .duck-date  { font-size: 1.1rem; font-weight: 600; margin-top: 0.5rem; }
     .duck-time  { font-size: 2.2rem; font-weight: 700; letter-spacing: 0.05em; }
+    .load-status {
+      width: 100%;
+      margin-top: 1rem;
+      padding-top: 0.9rem;
+      border-top: 1px solid #33394a;
+      text-align: left;
+    }
+    .load-status-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #8a9bae;
+      margin-bottom: 0.6rem;
+    }
+    .load-status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.45rem 1rem;
+      font-size: 0.78rem;
+    }
+    .load-status-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      color: #c7d0dc;
+    }
+    .load-status-item span:last-child {
+      color: #8a9bae;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 14ch;
+    }
+    .load-indicator-ok { color: #66bb6a !important; }
+    .load-indicator-fail { color: #ef5350 !important; }
+    .load-indicator-pending { color: #8a9bae !important; }
     .ncentral-table { font-size: 0.8rem; }
     .ncentral-table th { color: #8a9bae; font-weight: 500; border-color: #33394a; }
     .ncentral-table td { border-color: #33394a; vertical-align: middle; }
@@ -56,7 +93,7 @@
     <div class="col-4">
       <div class="widget">
         <h6>Wazuh</h6>
-        <div class="d-flex gap-4 mb-3">
+        <div class="d-flex flex-wrap gap-3 mb-3">
           <div>
             <div class="stat-value badge-critical" id="wazuh-critical">—</div>
             <div class="stat-label">Critical</div>
@@ -64,6 +101,14 @@
           <div>
             <div class="stat-value badge-high" id="wazuh-high">—</div>
             <div class="stat-label">High</div>
+          </div>
+          <div>
+            <div class="stat-value" id="wazuh-active">—</div>
+            <div class="stat-label">Active Devices</div>
+          </div>
+          <div>
+            <div class="stat-value" id="wazuh-disconnected">—</div>
+            <div class="stat-label">Disconnected Devices</div>
           </div>
         </div>
         <canvas id="wazuhChart"></canvas>
@@ -195,6 +240,20 @@
         <div class="duck-emoji">🦆</div>
         <div class="duck-date" id="duck-date">—</div>
         <div class="duck-time" id="duck-time">—</div>
+        <div class="load-status">
+          <div class="load-status-title">Last Loaded</div>
+          <div class="load-status-grid">
+            <div class="load-status-item"><span>Wazuh</span><span id="loaded-wazuh" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>Atera</span><span id="loaded-atera" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>Vipre AV</span><span id="loaded-vipre" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>Backup</span><span id="loaded-backup" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>AD Metrics</span><span id="loaded-ad" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>N-central</span><span id="loaded-ncentral" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>Veeam</span><span id="loaded-veeam" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>Weather</span><span id="loaded-weather" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>Date &amp; Time</span><span id="loaded-datetime" class="load-indicator-pending">⏳ —</span></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -220,6 +279,19 @@
     fill: false,
   };
 
+  const chartInstances = {};
+
+  const refreshIntervals = {
+    wazuh: 60 * 60 * 1000,
+    atera: 10 * 60 * 1000,
+    vipre: 60 * 60 * 1000,
+    backup: 2 * 60 * 60 * 1000,
+    ad: 2 * 60 * 60 * 1000,
+    ncentral: 5 * 60 * 1000,
+    veeam: 2 * 60 * 60 * 1000,
+    weather: 30 * 60 * 1000,
+  };
+
   function gridOpts() {
     return {
       scales: {
@@ -229,31 +301,186 @@
     };
   }
 
+  function formatLoadedTime(date = new Date()) {
+    return new Intl.DateTimeFormat('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).format(date);
+  }
+
+  async function fetchJson(url) {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} from ${url}`);
+    }
+
+    return response.json();
+  }
+
+  function shortenErrorReason(reason) {
+    if (!reason) {
+      return '';
+    }
+
+    const clean = String(reason).replace(/\s+/g, ' ').trim();
+    if (clean.length <= 20) {
+      return clean;
+    }
+
+    return `${clean.slice(0, 19)}…`;
+  }
+
+  function setWidgetLoadState(widget, status, loadedAt = new Date(), reason = '') {
+    const element = document.getElementById(`loaded-${widget}`);
+    if (!element) {
+      return;
+    }
+
+    const statusConfig = {
+      ok:   { emoji: '✅', className: 'load-indicator-ok' },
+      fail: { emoji: '❌', className: 'load-indicator-fail' },
+    };
+
+    const config = statusConfig[status] || statusConfig.fail;
+    element.classList.remove('load-indicator-ok', 'load-indicator-fail', 'load-indicator-pending');
+    element.classList.add(config.className);
+    const timeText = formatLoadedTime(loadedAt);
+    const shortReason = status === 'fail' ? shortenErrorReason(reason) : '';
+    element.textContent = shortReason ? `${config.emoji} ${timeText} ${shortReason}` : `${config.emoji} ${timeText}`;
+    element.title = reason || '';
+  }
+
+  function markWidgetLoadSuccess(widget, loadedAt = new Date()) {
+    setWidgetLoadState(widget, 'ok', loadedAt, 'Last reload succeeded');
+  }
+
+  function markWidgetLoadFailure(widget, loadedAt = new Date(), reason = 'Reload failed') {
+    setWidgetLoadState(widget, 'fail', loadedAt, reason);
+  }
+
+  function getWidgetErrorMessage(error) {
+    if (error && typeof error === 'object' && 'message' in error) {
+      return error.message;
+    }
+
+    return String(error);
+  }
+
+  function renderChart(canvasId, config) {
+    if (chartInstances[canvasId]) {
+      chartInstances[canvasId].destroy();
+    }
+
+    chartInstances[canvasId] = new Chart(document.getElementById(canvasId), config);
+  }
+
+  async function runWidgetLoader(widget, loader) {
+    const loadedAt = new Date();
+
+    try {
+      await loader();
+      markWidgetLoadSuccess(widget, loadedAt);
+    } catch (error) {
+      const reason = getWidgetErrorMessage(error);
+      console.error(`Failed to load ${widget}: ${reason}`);
+      markWidgetLoadFailure(widget, loadedAt, reason);
+    }
+  }
+
+  function startWidgetRefresh(widget, loader, intervalMs) {
+    runWidgetLoader(widget, loader);
+
+    if (intervalMs) {
+      window.setInterval(() => {
+        runWidgetLoader(widget, loader);
+      }, intervalMs);
+    }
+  }
+
   // ── Wazuh ──────────────────────────────────────────────────────────────────
   async function loadWazuh() {
-    const d = await fetch('/api/wazuh').then(r => r.json());
-    document.getElementById('wazuh-critical').textContent = d.count.critical;
-    document.getElementById('wazuh-high').textContent     = d.count.high;
-    new Chart(document.getElementById('wazuhChart'), {
+    const d = await fetchJson('/api/wazuh');
+    document.getElementById('wazuh-critical').textContent     = d.count.critical;
+    document.getElementById('wazuh-high').textContent         = d.count.high;
+    document.getElementById('wazuh-active').textContent       = d.count.active_devices;
+    document.getElementById('wazuh-disconnected').textContent = d.count.disconnected_devices;
+    renderChart('wazuhChart', {
       type: 'bar',
       data: {
         labels: d.history.map(h => h.day),
         datasets: [
-          { label: 'Critical', data: d.history.map(h => h.critical), backgroundColor: '#ff5c5c' },
-          { label: 'High',     data: d.history.map(h => h.high),     backgroundColor: '#ffb347' },
+          {
+            label: 'Active Devices',
+            data: d.history.map(h => h.active_devices),
+            backgroundColor: '#42a5f5',
+            stack: 'devices',
+            yAxisID: 'yDevices',
+            order: 2,
+          },
+          {
+            label: 'Disconnected Devices',
+            data: d.history.map(h => h.disconnected_devices),
+            backgroundColor: '#78909c',
+            stack: 'devices',
+            yAxisID: 'yDevices',
+            order: 2,
+          },
+          {
+            label: 'Critical',
+            data: d.history.map(h => h.critical),
+            borderColor: '#ff5c5c',
+            backgroundColor: '#ff5c5c',
+            type: 'line',
+            yAxisID: 'yAlerts',
+            order: 1,
+            ...lineDefaults,
+          },
+          {
+            label: 'High',
+            data: d.history.map(h => h.high),
+            borderColor: '#ffb347',
+            backgroundColor: '#ffb347',
+            type: 'line',
+            yAxisID: 'yAlerts',
+            order: 1,
+            ...lineDefaults,
+          },
         ],
       },
-      options: { ...gridOpts(), plugins: { legend: { labels: { color: '#8a9bae' } } }, scales: { ...gridOpts().scales, x: { ...gridOpts().scales.x, stacked: true }, y: { ...gridOpts().scales.y, stacked: true } } },
+      options: {
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { labels: { color: '#8a9bae' } } },
+        scales: {
+          x: { ticks: { color: '#8a9bae' }, grid: { color: '#2e3443' }, stacked: true },
+          yDevices: {
+            beginAtZero: true,
+            position: 'left',
+            stacked: true,
+            ticks: { color: '#8a9bae' },
+            grid: { color: '#2e3443' },
+            title: { display: true, text: 'Devices', color: '#8a9bae' },
+          },
+          yAlerts: {
+            beginAtZero: true,
+            position: 'right',
+            ticks: { color: '#8a9bae' },
+            grid: { drawOnChartArea: false },
+            title: { display: true, text: 'Alerts', color: '#8a9bae' },
+          },
+        },
+      },
     });
   }
 
   // ── Atera ──────────────────────────────────────────────────────────────────
   async function loadAtera() {
-    const d = await fetch('/api/atera').then(r => r.json());
+    const d = await fetchJson('/api/atera');
     document.getElementById('atera-alerts').textContent  = d.active_alerts;
     document.getElementById('atera-tickets').textContent = d.open_tickets;
     document.getElementById('atera-patches').textContent = d.patching.pending_patches;
-    new Chart(document.getElementById('ateraChart'), {
+    renderChart('ateraChart', {
       type: 'line',
       data: {
         labels: d.history.map(h => h.day),
@@ -268,12 +495,12 @@
 
   // ── Vipre ──────────────────────────────────────────────────────────────────
   async function loadVipre() {
-    const d = await fetch('/api/vipre').then(r => r.json());
+    const d = await fetchJson('/api/vipre');
     document.getElementById('vipre-outdated').textContent = d.outdated_devices;
     document.getElementById('vipre-lost').textContent     = d.lost_devices;
     document.getElementById('vipre-no-av').textContent    = d.in_ad_no_av;
     document.getElementById('vipre-no-ad').textContent    = d.av_not_in_ad;
-    new Chart(document.getElementById('vipreChart'), {
+    renderChart('vipreChart', {
       type: 'line',
       data: {
         labels: d.history.map(h => h.day),
@@ -290,8 +517,8 @@
 
   // ── Backup ─────────────────────────────────────────────────────────────────
   async function loadBackup() {
-    const d = await fetch('/api/backup').then(r => r.json());
-    new Chart(document.getElementById('backupChart'), {
+    const d = await fetchJson('/api/backup');
+    renderChart('backupChart', {
       type: 'pie',
       data: {
         labels: ['Green','Yellow','Orange','Red','Grey'],
@@ -307,10 +534,10 @@
 
   // ── AD Metrics ────────────────────────────────────────────────────────────
   async function loadAD() {
-    const d = await fetch('/api/ad').then(r => r.json());
+    const d = await fetchJson('/api/ad');
     document.getElementById('ad-expired').textContent = d.password_expired;
     document.getElementById('ad-locked').textContent  = d.locked_out;
-    new Chart(document.getElementById('adChart'), {
+    renderChart('adChart', {
       type: 'line',
       data: {
         labels: d.history.map(h => h.day),
@@ -325,7 +552,7 @@
 
   // ── N-central ─────────────────────────────────────────────────────────────
   async function loadNcentral() {
-    const d = await fetch('/api/ncentral').then(r => r.json());
+    const d = await fetchJson('/api/ncentral');
     const typeColor = { Critical: '#f44336', Warning: '#ff9800', Failed: '#9e9e9e' };
     const tbody = document.getElementById('ncentral-body');
     tbody.innerHTML = d.alerts.map(a => {
@@ -343,8 +570,8 @@
 
   // ── Veeam ─────────────────────────────────────────────────────────────────
   async function loadVeeam() {
-    const d = await fetch('/api/veeam').then(r => r.json());
-    new Chart(document.getElementById('veeamChart'), {
+    const d = await fetchJson('/api/veeam');
+    renderChart('veeamChart', {
       type: 'pie',
       data: {
         labels: ['Green','Yellow','Orange','Red','Grey'],
@@ -368,7 +595,7 @@
     'cloudy':            '☁️',
   };
   async function loadWeather() {
-    const d = await fetch('/api/weather').then(r => r.json());
+    const d = await fetchJson('/api/weather');
     document.getElementById('weather-icon').textContent      = weatherIcons[d.icon] || '🌡️';
     document.getElementById('weather-temp').textContent      = `${d.temperature_c}°C`;
     document.getElementById('weather-condition').textContent = d.condition;
@@ -377,24 +604,82 @@
   }
 
   // ── Datetime ──────────────────────────────────────────────────────────────
-  async function loadDatetime() {
-    const d = await fetch('/api/datetime').then(r => r.json());
-    document.getElementById('duck-date').textContent = d.date;
-    document.getElementById('duck-time').textContent = d.time;
+  let duckNow = null;
+  let duckTickTimer = null;
+  let duckSyncTimer = null;
+
+  function formatDuckDate(date) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    }).formatToParts(date);
+    const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    return `${values.weekday}, ${values.month} ${values.day} ${values.year}`;
+  }
+
+  function formatDuckTime(date) {
+    return new Intl.DateTimeFormat('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).format(date);
+  }
+
+  function renderDatetime() {
+    if (!duckNow) {
+      return;
+    }
+
+    document.getElementById('duck-date').textContent = formatDuckDate(duckNow);
+    document.getElementById('duck-time').textContent = formatDuckTime(duckNow);
+  }
+
+  function tickDatetime() {
+    if (!duckNow) {
+      return;
+    }
+
+    duckNow = new Date(duckNow.getTime() + 1000);
+    renderDatetime();
+  }
+
+  async function syncDatetime() {
+    const d = await fetchJson('/api/datetime');
+    duckNow = new Date(d.timestamp);
+
+    if (Number.isNaN(duckNow.getTime())) {
+      throw new Error('Invalid datetime timestamp from API');
+    }
+
+    renderDatetime();
+  }
+
+  function startDatetimeRefresh() {
+    runWidgetLoader('datetime', syncDatetime);
+
+    if (!duckTickTimer) {
+      duckTickTimer = window.setInterval(tickDatetime, 1000);
+    }
+
+    if (!duckSyncTimer) {
+      duckSyncTimer = window.setInterval(() => runWidgetLoader('datetime', syncDatetime), 60000);
+    }
   }
 
   // ── Boot ──────────────────────────────────────────────────────────────────
-  Promise.all([
-    loadWazuh(),
-    loadAtera(),
-    loadVipre(),
-    loadBackup(),
-    loadAD(),
-    loadNcentral(),
-    loadVeeam(),
-    loadWeather(),
-    loadDatetime(),
-  ]);
+  startWidgetRefresh('wazuh', loadWazuh, refreshIntervals.wazuh);
+  startWidgetRefresh('atera', loadAtera, refreshIntervals.atera);
+  startWidgetRefresh('vipre', loadVipre, refreshIntervals.vipre);
+  startWidgetRefresh('backup', loadBackup, refreshIntervals.backup);
+  startWidgetRefresh('ad', loadAD, refreshIntervals.ad);
+  startWidgetRefresh('ncentral', loadNcentral, refreshIntervals.ncentral);
+  startWidgetRefresh('veeam', loadVeeam, refreshIntervals.veeam);
+  startWidgetRefresh('weather', loadWeather, refreshIntervals.weather);
+
+  startDatetimeRefresh();
 </script>
 </body>
 </html>
