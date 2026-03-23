@@ -18,7 +18,13 @@ pub fn get_wazuh_alerts() -> Json<Value> {
 
 #[rocket::get("/api/atera")]
 pub fn get_atera_data() -> Json<Value> {
-    Json(mocks::atera::payload())
+    match services::atera::fetch_payload() {
+        Ok(payload) => Json(payload),
+        Err(error) => {
+            eprintln!("Atera fetch failed, using mock payload: {error}");
+            Json(mocks::atera::payload())
+        }
+    }
 }
 
 #[rocket::get("/api/vipre")]

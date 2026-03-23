@@ -2,7 +2,9 @@
 extern crate rocket;
 
 mod mocks;
+mod models;
 mod routes;
+mod schema;
 mod services;
 mod weather_payload;
 
@@ -14,6 +16,10 @@ use rocket_dyn_templates::Template;
 
 #[launch]
 fn rocket() -> _ {
+    if let Err(error) = services::atera::initialize_database() {
+        eprintln!("Atera database initialization failed: {error}");
+    }
+
     rocket::build()
         .attach(Template::fairing())
         .mount(
