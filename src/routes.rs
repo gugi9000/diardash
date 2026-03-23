@@ -37,8 +37,14 @@ pub fn get_ad_metrics() -> Json<Value> {
 }
 
 #[rocket::get("/api/ncentral")]
-pub fn get_ncentral_alerts() -> Json<Value> {
-    Json(mocks::ncentral::payload())
+pub async fn get_ncentral_alerts() -> Json<Value> {
+    match services::ncentral::fetch_payload().await {
+        Ok(payload) => Json(payload),
+        Err(error) => {
+            eprintln!("N-central fetch failed, using mock payload: {error}");
+            Json(mocks::ncentral::payload())
+        }
+    }
 }
 
 #[rocket::get("/api/veeam")]
