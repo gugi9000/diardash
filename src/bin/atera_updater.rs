@@ -70,6 +70,7 @@ async fn run(options: RunOptions) -> Result<(), String> {
         .map_err(|_| String::from("Missing ATERA_API_KEY in .env"))?;
 
     if options.verbose {
+        println!("Raw DATABASE_URL={raw_database_url}");
         println!("Using DATABASE_URL={database_url}");
         println!("Dry-run mode: {}", options.dry_run);
     }
@@ -139,24 +140,14 @@ fn resolve_database_url(raw_database_url: &str) -> Result<String, String> {
     let absolute_path = if raw_path.is_absolute() {
         raw_path
     } else {
-        default_data_directory()?.join(raw_path)
+        let cwd = env::current_dir()
+            .map_err(|error| format!("Failed to resolve working directory: {error}"))?;
+        cwd.join(raw_path)
     };
 
     ensure_parent_directory(&absolute_path)?;
 
     Ok(absolute_path.to_string_lossy().into_owned())
-}
-
-fn default_data_directory() -> Result<PathBuf, String> {
-    if let Ok(custom) = env::var("DIARDASH_DATA_DIR") {
-        return Ok(PathBuf::from(custom));
-    }
-
-    if let Ok(local_app_data) = env::var("LOCALAPPDATA") {
-        return Ok(PathBuf::from(local_app_data).join("diardash"));
-    }
-
-    env::current_dir().map_err(|error| format!("Failed to resolve working directory: {error}"))
 }
 
 fn ensure_parent_directory(path: &Path) -> Result<(), String> {

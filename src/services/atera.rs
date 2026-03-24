@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
+use std::env;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use chrono::{Duration, Local, NaiveDate, NaiveTime};
 use diesel::prelude::*;
@@ -57,7 +58,25 @@ pub fn fetch_payload() -> Result<Value, String> {
 }
 
 fn database_url() -> Result<String, String> {
-    std::env::var("DATABASE_URL").map_err(|_| String::from("Missing DATABASE_URL in .env"))
+    let raw = std::env::var("DATABASE_URL").map_err(|_| String::from("Missing DATABASE_URL in .env"))?;
+    resolve_database_url(&raw)
+}
+
+fn resolve_database_url(raw_database_url: &str) -> Result<String, String> {
+    if raw_database_url == ":memory:" {
+        return Ok(String::from(raw_database_url));
+    }
+
+    let raw_path = PathBuf::from(raw_database_url);
+    let absolute_path = if raw_path.is_absolute() {
+        raw_path
+    } else {
+        let cwd = env::current_dir()
+            .map_err(|error| format!("Failed to resolve working directory: {error}"))?;
+        cwd.join(raw_path)
+    };
+
+    Ok(absolute_path.to_string_lossy().into_owned())
 }
 
 fn establish_connection(database_url: &str) -> Result<SqliteConnection, String> {
