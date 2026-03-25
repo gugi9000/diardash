@@ -22,6 +22,7 @@ fn rocket() -> _ {
 
     rocket::build()
         .attach(Template::fairing())
+        .mount("/static", rocket::fs::FileServer::from("static"))
         .mount(
             "/",
             routes![
