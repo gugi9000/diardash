@@ -45,7 +45,13 @@ pub async fn get_backup_status() -> Json<Value> {
 
 #[rocket::get("/api/ad")]
 pub fn get_ad_metrics() -> Json<Value> {
-    Json(mocks::ad::payload())
+    match services::ad::fetch_payload() {
+        Ok(payload) => Json(payload),
+        Err(error) => {
+            eprintln!("AD fetch failed, using mock payload: {error}");
+            Json(mocks::ad::payload())
+        }
+    }
 }
 
 #[rocket::get("/api/ncentral")]
