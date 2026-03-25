@@ -36,6 +36,17 @@
     .widget-title-row h6 {
       margin-bottom: 0;
     }
+    .widget-title-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .last-updated-label {
+      font-size: 0.68rem;
+      color: #8a9bae;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
     .refresh-badge {
       font-size: 0.68rem;
       color: #ffb347;
@@ -187,7 +198,10 @@
       <div class="widget">
         <div class="widget-title-row">
           <h6>Atera</h6>
-          <span id="atera-refresh-badge" class="refresh-badge" style="display:none;">Refreshing...</span>
+          <div class="widget-title-meta">
+            <span id="atera-last-updated" class="last-updated-label">Updated -</span>
+            <span id="atera-refresh-badge" class="refresh-badge" style="display:none;">Refreshing...</span>
+          </div>
         </div>
         <div class="d-flex gap-4 mb-3">
           <div>
@@ -364,6 +378,9 @@
     weather: 30 * 60 * 1000,
   };
 
+  let ateraAgeMinutes = null;
+  let ateraAgeTickTimer = null;
+
   function gridOpts() {
     return {
       scales: {
@@ -446,6 +463,43 @@
     }
 
     chartInstances[canvasId] = new Chart(document.getElementById(canvasId), config);
+  }
+
+  function renderAteraLastUpdated() {
+    const lastUpdated = document.getElementById('atera-last-updated');
+    if (!lastUpdated) {
+      return;
+    }
+
+    if (!Number.isFinite(ateraAgeMinutes) || ateraAgeMinutes < 0) {
+      lastUpdated.textContent = 'Updated -';
+      return;
+    }
+
+    if (ateraAgeMinutes < 1) {
+      lastUpdated.textContent = 'Updated just now';
+      return;
+    }
+
+    if (ateraAgeMinutes === 1) {
+      lastUpdated.textContent = 'Updated 1 min ago';
+      return;
+    }
+
+    lastUpdated.textContent = `Updated ${ateraAgeMinutes} min ago`;
+  }
+
+  function startAteraAgeTicker() {
+    if (ateraAgeTickTimer) {
+      return;
+    }
+
+    ateraAgeTickTimer = window.setInterval(() => {
+      if (Number.isFinite(ateraAgeMinutes) && ateraAgeMinutes >= 0) {
+        ateraAgeMinutes += 1;
+        renderAteraLastUpdated();
+      }
+    }, 60000);
   }
 
   async function runWidgetLoader(widget, loader) {
@@ -554,6 +608,8 @@
     document.getElementById('atera-alerts').textContent  = d.active_alerts;
     document.getElementById('atera-tickets').textContent = d.open_tickets;
     document.getElementById('atera-patches').textContent = d.patching.pending_patches;
+    ateraAgeMinutes = Number(d._meta && d._meta.latest_age_minutes);
+    renderAteraLastUpdated();
     const refreshBadge = document.getElementById('atera-refresh-badge');
     if (refreshBadge) {
       const refreshing = !!(d._meta && d._meta.refresh_in_progress);
@@ -802,6 +858,7 @@
   startWidgetRefresh('veeam', loadVeeam, refreshIntervals.veeam);
   startWidgetRefresh('weather', loadWeather, refreshIntervals.weather);
 
+  startAteraAgeTicker();
   startDatetimeRefresh();
 </script>
 </body>

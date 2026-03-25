@@ -19,7 +19,7 @@ use crate::schema::atera_metrics;
 
 const SEED_DAYS: i64 = 12;
 const ENTRIES_PER_DAY: i64 = 4;
-const STALE_AFTER_HOURS: i64 = 4;
+const STALE_AFTER_HOURS: i64 = 1;
 const ALERTS_API: &str = "https://app.atera.com/api/v3/alerts?alertStatus=Open";
 const TICKETS_API: &str = "https://app.atera.com/api/v3/tickets?ticketStatus=Open";
 const DEVICES_API: &str = "https://app.atera.com/api/v3/agents";
@@ -55,6 +55,9 @@ pub fn fetch_payload() -> Result<Value, String> {
     seed_if_empty(&mut connection)?;
 
     let latest = latest_metric(&mut connection)?;
+    let latest_age_minutes = (Local::now().naive_local() - latest.recorded_at)
+        .num_minutes()
+        .max(0);
     let refresh_in_progress = maybe_refresh_metrics_in_background(&latest, database_url.clone());
     let history = history_maxima(&mut connection)?;
 
@@ -68,7 +71,8 @@ pub fn fetch_payload() -> Result<Value, String> {
         "history": history,
         "_meta": {
             "refresh_in_progress": refresh_in_progress,
-            "stale_after_hours": STALE_AFTER_HOURS
+            "stale_after_hours": STALE_AFTER_HOURS,
+            "latest_age_minutes": latest_age_minutes
         }
     }))
 }
