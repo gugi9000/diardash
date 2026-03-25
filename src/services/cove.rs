@@ -1,6 +1,8 @@
 use dotenvy::dotenv;
 use reqwest::header::{ACCEPT, ACCEPT_ENCODING, CONTENT_TYPE};
 use serde_json::{json, Value};
+use cached::proc_macro::cached;
+
 
 fn is_debug_enabled() -> bool {
     std::env::var("DEBUG")
@@ -257,6 +259,7 @@ async fn fetch_device_statistics(
     Ok(all_records)
 }
 
+#[cached(time = 120, key = "bool", convert = r#"{ true }"#, result = true)]
 pub async fn fetch_payload() -> Result<Value, String> {
     dotenv().ok();
 

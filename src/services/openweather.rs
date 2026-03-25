@@ -3,6 +3,7 @@ use std::sync::Once;
 
 use dotenvy::dotenv;
 use serde_json::Value;
+use cached::proc_macro::cached;
 
 use crate::weather_payload::WeatherPayload;
 
@@ -11,6 +12,7 @@ static WEATHER_KEY_LOG_ONCE: Once = Once::new();
 const DEFAULT_LAT: f64 = 55.6761;
 const DEFAULT_LON: f64 = 12.5683;
 
+#[cached(time = 120, key = "bool", convert = r#"{ true }"#, result = true)]
 pub async fn fetch_payload() -> Result<Value, String> {
     dotenv().ok();
     log_weather_config_once();
@@ -18,16 +20,19 @@ pub async fn fetch_payload() -> Result<Value, String> {
     let (api_key, api_key_source) = read_api_key().ok_or_else(|| {
         String::from("Missing API key in .env (tried OPENWEATHER_API_KEY, OPENWEATHER_KEY, API_KEY)")
     })?;
-    let debug: String = env::var("DEBUG").unwrap_or_default();
+    let debug_enabled = matches!(
+        env::var("DEBUG"),
+        Ok(value) if matches!(value.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on")
+    );
 
-    if debug == "true" {
-        eprintln!("Weather debug: resolved coordinates lat={DEFAULT_LAT}, lon={DEFAULT_LON}");
+    let (lat, lon) = resolve_coordinates()?;
+
+    if debug_enabled {
+        eprintln!("Weather debug: resolved coordinates lat={lat}, lon={lon}");
         log_api_key_once(api_key_source, &api_key);
     }
 
     let client = reqwest::Client::new();
-
-    let (lat, lon) = resolve_coordinates()?;
 
     let data = request_json(
         &client,
@@ -35,13 +40,36 @@ pub async fn fetch_payload() -> Result<Value, String> {
         &[
             ("lat", lat.to_string()),
             ("lon", lon.to_string()),
-            ("appid", api_key.clone()),
+            ("appid", api_key),
             ("units", String::from("metric")),
             ("exclude", String::from("minutely,hourly,daily,alerts")),
         ],
     )
     .await?;
 
+    let weather = parse_current_weather(&data)?;
+
+    Ok(WeatherPayload {
+        temperature_c: weather.temperature_c,
+        condition: weather.condition,
+        icon: map_openweather_icon(&weather.icon_code).to_string(),
+        humidity_pct: weather.humidity_pct,
+        wind_kmh: weather.wind_kmh,
+        source: String::from("openweather-3.0"),
+        fallback_used: false,
+    }
+    .to_json())
+}
+
+struct CurrentWeather {
+    temperature_c: i64,
+    condition: String,
+    icon_code: String,
+    humidity_pct: i64,
+    wind_kmh: i64,
+}
+
+fn parse_current_weather(data: &Value) -> Result<CurrentWeather, String> {
     let current = data
         .get("current")
         .ok_or_else(|| String::from("Missing current in OpenWeather 3.0 response"))?;
@@ -72,21 +100,22 @@ pub async fn fetch_payload() -> Result<Value, String> {
                 .get("description")
                 .and_then(Value::as_str)
                 .unwrap_or("Unknown");
-            let icon = entry.get("icon").and_then(Value::as_str).unwrap_or("");
+            let icon = entry
+                .get("icon")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string();
             (to_title_case(description), icon)
         })
         .ok_or_else(|| String::from("Missing current.weather[0] in OpenWeather response"))?;
 
-    Ok(WeatherPayload {
+    Ok(CurrentWeather {
         temperature_c,
         condition,
-        icon: map_openweather_icon(icon_code).to_string(),
+        icon_code,
         humidity_pct,
         wind_kmh,
-        source: String::from("openweather-3.0"),
-        fallback_used: false,
-    }
-    .to_json())
+    })
 }
 
 fn log_weather_config_once() {
@@ -158,6 +187,10 @@ fn read_coordinates_compact() -> Result<Option<(f64, f64)>, String> {
         Err(_) => return Ok(None),
     };
 
+    Ok(Some(parse_coordinates_compact(&raw)?))
+}
+
+fn parse_coordinates_compact(raw: &str) -> Result<(f64, f64), String> {
     let mut parts = raw.split(',').map(str::trim);
     let lat = parts.next().ok_or_else(|| {
         String::from("OPENWEATHER_COORDS must be in the format 'lat,lon'")
@@ -179,7 +212,7 @@ fn read_coordinates_compact() -> Result<Option<(f64, f64)>, String> {
         .parse::<f64>()
         .map_err(|_| String::from("OPENWEATHER_COORDS longitude is not a valid number"))?;
 
-    Ok(Some((lat_parsed, lon_parsed)))
+    Ok((lat_parsed, lon_parsed))
 }
 
 async fn request_json(
@@ -252,5 +285,60 @@ fn map_openweather_icon(icon_code: &str) -> &'static str {
         "11d" | "11n" => "thunderstorm",
         "13d" | "13n" => "snow",
         _ => "cloudy",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{map_openweather_icon, parse_coordinates_compact, parse_current_weather};
+    use serde_json::json;
+
+    #[test]
+    fn parse_coordinates_compact_accepts_trimmed_lat_lon() {
+        let coords = parse_coordinates_compact(" 55.6761 , 12.5683 ").unwrap();
+
+        assert_eq!(coords, (55.6761, 12.5683));
+    }
+
+    #[test]
+    fn parse_coordinates_compact_rejects_extra_values() {
+        let error = parse_coordinates_compact("55.6761,12.5683,99").unwrap_err();
+
+        assert_eq!(
+            error,
+            "OPENWEATHER_COORDS must contain exactly two values: 'lat,lon'"
+        );
+    }
+
+    #[test]
+    fn parse_current_weather_extracts_expected_fields() {
+        let payload = json!({
+            "current": {
+                "temp": 18.6,
+                "humidity": 74,
+                "wind_speed": 5.5,
+                "weather": [
+                    {
+                        "description": "broken clouds",
+                        "icon": "04d"
+                    }
+                ]
+            }
+        });
+
+        let weather = parse_current_weather(&payload).unwrap();
+
+        assert_eq!(weather.temperature_c, 19);
+        assert_eq!(weather.humidity_pct, 74);
+        assert_eq!(weather.wind_kmh, 20);
+        assert_eq!(weather.condition, "Broken Clouds");
+        assert_eq!(weather.icon_code, "04d");
+    }
+
+    #[test]
+    fn map_openweather_icon_maps_known_and_unknown_codes() {
+        assert_eq!(map_openweather_icon("01d"), "clear-day");
+        assert_eq!(map_openweather_icon("10n"), "rain");
+        assert_eq!(map_openweather_icon("does-not-exist"), "cloudy");
     }
 }
