@@ -222,6 +222,20 @@
               <tr><td colspan="4" class="text-center text-secondary">Loading…</td></tr>
             </tbody>
           </table>
+        <div class="load-status">
+          <div class="load-status-title">Last Loaded</div>
+          <div class="load-status-grid">
+            <div class="load-status-item"><span>Wazuh</span><span id="loaded-wazuh" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>Atera</span><span id="loaded-atera" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>Vipre AV</span><span id="loaded-vipre" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>Backup</span><span id="loaded-backup" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>AD Metrics</span><span id="loaded-ad" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>N-central</span><span id="loaded-ncentral" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>Veeam</span><span id="loaded-veeam" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>Weather</span><span id="loaded-weather" class="load-indicator-pending">⏳ —</span></div>
+            <div class="load-status-item"><span>Date &amp; Time</span><span id="loaded-datetime" class="load-indicator-pending">⏳ —</span></div>
+          </div>
+        </div>
         </div>
       </div>
     </div>
@@ -237,6 +251,9 @@
     <!-- Widget 8: Weather -->
     <div class="col-4 dashboard-widget-weather">
       <div class="widget weather-widget">
+        <h6>Date &amp; Time</h6>
+        <div class="duck-date" id="duck-date">—</div>
+        <div class="duck-time" id="duck-time">—</div>
         <h6>Weather</h6>
         <div class="weather-icon" id="weather-icon">☁️</div>
         <div class="weather-temp" id="weather-temp">—°C</div>
@@ -252,24 +269,7 @@
     <!-- Widget 9: Duck Date/Time -->
     <div class="col-4 dashboard-widget-duck">
       <div class="widget duck-widget">
-        <h6>Date &amp; Time</h6>
-        <div class="duck-emoji">🦆</div>
-        <div class="duck-date" id="duck-date">—</div>
-        <div class="duck-time" id="duck-time">—</div>
-        <div class="load-status">
-          <div class="load-status-title">Last Loaded</div>
-          <div class="load-status-grid">
-            <div class="load-status-item"><span>Wazuh</span><span id="loaded-wazuh" class="load-indicator-pending">⏳ —</span></div>
-            <div class="load-status-item"><span>Atera</span><span id="loaded-atera" class="load-indicator-pending">⏳ —</span></div>
-            <div class="load-status-item"><span>Vipre AV</span><span id="loaded-vipre" class="load-indicator-pending">⏳ —</span></div>
-            <div class="load-status-item"><span>Backup</span><span id="loaded-backup" class="load-indicator-pending">⏳ —</span></div>
-            <div class="load-status-item"><span>AD Metrics</span><span id="loaded-ad" class="load-indicator-pending">⏳ —</span></div>
-            <div class="load-status-item"><span>N-central</span><span id="loaded-ncentral" class="load-indicator-pending">⏳ —</span></div>
-            <div class="load-status-item"><span>Veeam</span><span id="loaded-veeam" class="load-indicator-pending">⏳ —</span></div>
-            <div class="load-status-item"><span>Weather</span><span id="loaded-weather" class="load-indicator-pending">⏳ —</span></div>
-            <div class="load-status-item"><span>Date &amp; Time</span><span id="loaded-datetime" class="load-indicator-pending">⏳ —</span></div>
-          </div>
-        </div>
+        <div class="duck-emoji"><img src="/static/cigar-duck_rev.png" alt="🦆" height="100%"></div>
       </div>
     </div>
 
