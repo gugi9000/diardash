@@ -259,7 +259,7 @@ async fn fetch_device_statistics(
     Ok(all_records)
 }
 
-#[cached(time = 120, key = "bool", convert = r#"{ true }"#, result = true)]
+#[cached(time = 300, key = "bool", convert = r#"{ true }"#, result = true)]
 pub async fn fetch_payload() -> Result<Value, String> {
     dotenv().ok();
 
