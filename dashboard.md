@@ -1,16 +1,13 @@
-# Ducks in a row dashboard.
+# Ducks in a row dashboard
 
-A web app using Rocket.rs 
-
+A web app using Rocket.rs
 
 9 widgets in a 3 by 3 grid
 
 | 9 | 1 | 8 |
+| - | - | - |
 | 4 | 5 | 6 |
 | 7 | 3 | 2 |
-
-
-Data for each is loaded with jQuery calls to backend.
 
 1. wazuh
 2. Atera
@@ -30,24 +27,25 @@ Data for each is loaded with jQuery calls to backend.
 - [x] Connect to a weather API
 - [ ] Connect to Vipre AV API
 - [x] Connect to Backup API
-- [x] Figure out AD connectivity 
+- [x] Figure out AD connectivity
 - [x] Connect to n-central
 - [ ] Connect to Veeam APIs
 
-
 ## Wazuh
+
 - critical alerts
 - high alerts
-* active devices
-* disconnected devices
+
+- active devices
+- disconnected devices
 
 And a stacked bar graph for the highest value for active and disconnected device over the last 7 days per day.
 Overlaid with a line graph of critical and high alerts.
 
 Updates hourly
 
-
 ## Atera
+
 - active alerts
 - open tickets
 - patching status (pending patches / device count)
@@ -56,8 +54,8 @@ And a line graph for the highest value for alerts and ticket count over the last
 
 Updated every 10 minutes
 
-
 ## Vipre AV
+
 - outdated devices count
 - lost devices count
 - devices in AD, but no AV
@@ -65,14 +63,15 @@ Updated every 10 minutes
 
 And a line graph for the highest value for each over the last 7 days per day
 
-
 ## Backup
+
 A pie graph of devices with status, green, yellow, orange, red and grey. Highlight/pop out those not green.
 
 Updates bi-hourly (every 2 hours)
 
 
 ## AD Metrics
+
 - number of accounts with password expired
 - number of locked out accounts
 
@@ -82,6 +81,7 @@ Updates bi-hourly (every 2 hours)
 
 
 ## N-central
+
 listing of all alerts from N-central
 device name, service, transition time, type
 
@@ -89,16 +89,15 @@ Updates every 5 minutes
 
 
 ## Veeam jobs
+
 A pie graph of devices with status, green, yellow, orange, red and grey. Highlight/pop out those not green.
 
 Updates bi-hourly (every 2 hours)
 
-
 ## Weather info
+
 A graphical weather widget with temperature
 
-
 ## Duck showing date and time
-Duck with an emoji like date sign and current time below
 
-
+Duck with a cigar telling you how it is.
