@@ -30,6 +30,7 @@
     .stat-label { font-size: 0.8rem; color: #8a9bae; }
     .badge-critical { color: #ff5c5c; }
     .badge-high     { color: #ffb347; }
+    .badge-info     { color: #42a5f5; }
     .widget canvas  { flex: 1; }
     .duck-widget {
       align-items: center;
@@ -118,7 +119,7 @@
             <div class="stat-label">High</div>
           </div>
           <div>
-            <div class="stat-value" id="wazuh-active">—</div>
+            <div class="stat-value badge-info" id="wazuh-active">—</div>
             <div class="stat-label">Active Devices</div>
           </div>
           <div>
@@ -501,7 +502,7 @@
       data: {
         labels: d.history.map(h => h.day),
         datasets: [
-          { label: 'Alerts',  data: d.history.map(h => h.alerts),  borderColor: '#42a5f5', ...lineDefaults },
+          { label: 'Alerts',  data: d.history.map(h => h.alerts),  borderColor: '#ffb347', ...lineDefaults },
           { label: 'Tickets', data: d.history.map(h => h.tickets), borderColor: '#ab47bc', ...lineDefaults },
         ],
       },
