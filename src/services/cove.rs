@@ -1,3 +1,4 @@
+use chrono::Local;
 use dotenvy::dotenv;
 use reqwest::header::{ACCEPT, ACCEPT_ENCODING, CONTENT_TYPE};
 use serde_json::{json, Value};
@@ -312,7 +313,10 @@ pub async fn fetch_payload() -> Result<Value, String> {
         "yellow": yellow,
         "orange": orange,
         "red":    red,
-        "grey":   grey
+        "grey":   grey,
+        "_meta": {
+            "last_update": Local::now().to_rfc3339()
+        }
     }))
 }
 

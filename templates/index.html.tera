@@ -250,7 +250,10 @@
     <!-- Widget 4: Backup -->
     <div class="col-4 dashboard-widget-backup">
       <div class="widget">
-        <h6>Backup Status</h6>
+        <div class="widget-title-row">
+          <h6>Backup Status</h6>
+          <span id="backup-last-updated" class="last-updated-label">Updated -</span>
+        </div>
         <canvas id="backupChart"></canvas>
       </div>
     </div>
@@ -258,7 +261,10 @@
     <!-- Widget 5: AD Metrics -->
     <div class="col-4 dashboard-widget-ad">
       <div class="widget">
-        <h6>AD Metrics</h6>
+        <div class="widget-title-row">
+          <h6>AD Metrics</h6>
+          <span id="ad-last-updated" class="last-updated-label">Updated -</span>
+        </div>
         <div class="d-flex gap-4 mb-3">
           <div>
             <div class="stat-value" id="ad-expired">—</div>
@@ -465,6 +471,15 @@
     chartInstances[canvasId] = new Chart(document.getElementById(canvasId), config);
   }
 
+  function formatAgeLabel(isoString) {
+    if (!isoString) return 'Updated -';
+    const mins = Math.floor((Date.now() - new Date(isoString.replace(' ', 'T'))) / 60000);
+    if (!Number.isFinite(mins) || mins < 0) return 'Updated -';
+    if (mins < 1) return 'Updated just now';
+    if (mins === 1) return 'Updated 1 min ago';
+    return `Updated ${mins} min ago`;
+  }
+
   function renderAteraLastUpdated() {
     const lastUpdated = document.getElementById('atera-last-updated');
     if (!lastUpdated) {
@@ -655,6 +670,8 @@
   // ── Backup ─────────────────────────────────────────────────────────────────
   async function loadBackup() {
     const d = await fetchJson('/api/backup');
+    const backupLabel = document.getElementById('backup-last-updated');
+    if (backupLabel) backupLabel.textContent = formatAgeLabel(d._meta && d._meta.last_update);
     renderChart('backupChart', {
       type: 'pie',
       data: {
@@ -675,6 +692,8 @@
     const d = await fetchJson('/api/ad');
     document.getElementById('ad-expired').textContent = d.password_expired;
     document.getElementById('ad-locked').textContent  = d.locked_out;
+    const adLabel = document.getElementById('ad-last-updated');
+    if (adLabel) adLabel.textContent = formatAgeLabel(d._meta && d._meta.latest_timestamp);
     renderChart('adChart', {
       type: 'line',
       data: {
