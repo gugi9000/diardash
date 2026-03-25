@@ -325,3 +325,58 @@ fn test_get_visa() {
         visa.err()
     );
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{get_setting, parse_json_response, status_to_color};
+    use reqwest::header::{HeaderMap, HeaderValue};
+    use serde_json::json;
+
+    #[test]
+    fn parse_json_response_accepts_latin1_encoded_json() {
+        let headers = HeaderMap::new();
+        let body = b"{\"name\":\"S\xF8rensen\"}";
+
+        let parsed = parse_json_response(body, &headers).unwrap();
+
+        assert_eq!(parsed.get("name").and_then(|value| value.as_str()), Some("S\u{f8}rensen"));
+    }
+
+    #[test]
+    fn parse_json_response_reports_parse_context_for_invalid_payload() {
+        let mut headers = HeaderMap::new();
+        headers.insert("content-type", HeaderValue::from_static("application/json"));
+        headers.insert("content-encoding", HeaderValue::from_static("identity"));
+
+        let error = parse_json_response(b"not-json", &headers).unwrap_err();
+
+        assert!(error.contains("Failed to parse Cove response JSON:"));
+        assert!(error.contains("content-type=application/json"));
+        assert!(error.contains("content-encoding=identity"));
+        assert!(error.contains("body-preview=not-json"));
+    }
+
+    #[test]
+    fn get_setting_returns_named_value_from_settings_array() {
+        let settings = json!([
+            { "I1": "Device Name" },
+            { "I18": "HOST-01" },
+            { "D09F00": "5" }
+        ]);
+
+        assert_eq!(get_setting(&settings, "I1"), Some("Device Name"));
+        assert_eq!(get_setting(&settings, "I18"), Some("HOST-01"));
+        assert_eq!(get_setting(&settings, "D09F00"), Some("5"));
+        assert_eq!(get_setting(&settings, "missing"), None);
+    }
+
+    #[test]
+    fn status_to_color_maps_known_and_default_codes() {
+        assert_eq!(status_to_color(5), "green");
+        assert_eq!(status_to_color(8), "yellow");
+        assert_eq!(status_to_color(1), "orange");
+        assert_eq!(status_to_color(2), "red");
+        assert_eq!(status_to_color(7), "grey");
+        assert_eq!(status_to_color(99), "grey");
+    }
+}
