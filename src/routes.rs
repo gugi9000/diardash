@@ -33,8 +33,14 @@ pub fn get_vipre_data() -> Json<Value> {
 }
 
 #[rocket::get("/api/backup")]
-pub fn get_backup_status() -> Json<Value> {
-    Json(mocks::backup::payload())
+pub async fn get_backup_status() -> Json<Value> {
+    match services::cove::fetch_payload().await {
+        Ok(payload) => Json(payload),
+        Err(error) => {
+            eprintln!("Cove fecth failed, using mock payload: {error}");
+            Json(mocks::backup::payload())
+        }
+    }
 }
 
 #[rocket::get("/api/ad")]
