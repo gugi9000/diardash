@@ -6,9 +6,7 @@ A web app using Rocket.rs
 9 widgets in a 3 by 3 grid
 
 | 9 | 1 | 8 |
-| - | - | - |
 | 4 | 5 | 6 |
-| - | - | - |
 | 7 | 3 | 2 |
 
 
@@ -31,8 +29,8 @@ Data for each is loaded with jQuery calls to backend.
 - [x] Connect to Atera API
 - [x] Connect to a weather API
 - [ ] Connect to Vipre AV API
-- [ ] Connect to Backup API
-- [ ] Figure out AD connectivity 
+- [x] Connect to Backup API
+- [x] Figure out AD connectivity 
 - [x] Connect to n-central
 - [ ] Connect to Veeam APIs
 
