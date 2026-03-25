@@ -56,7 +56,11 @@ pub fn fetch_payload() -> Result<Value, String> {
         "_mock": false,
         "password_expired": latest.password_expired,
         "locked_out": latest.locked_out,
-        "history": history
+        "history": history,
+        "_meta": {
+            "source": AD_STATS_FILE,
+            "latest_timestamp": latest.recorded_at.format("%Y-%m-%d %H:%M:%S").to_string()
+        }
     }))
 }
 
