@@ -21,8 +21,20 @@ Data for each is loaded with jQuery calls to backend.
 5. AD metrics
 6. N-central
 7. Veeam jobs
-8. Weather info
-9. Duck showing date and time
+8. Weather info showing date and time
+9. A duck
+
+## TODO
+
+- [ ] Connect to wazuh API
+- [x] Wire up date time
+- [x] Connect to Atera API
+- [x] Connect to a weather API
+- [ ] Connect to Vipre AV API
+- [ ] Connect to Backup API
+- [ ] Figure out AD connectivity 
+- [x] Connect to n-central
+- [ ] Connect to Veeam APIs
 
 
 ## Wazuh
