@@ -33,6 +33,7 @@
     .badge-info     { color: #42a5f5; }
     .widget canvas  { flex: 1; }
     .duck-widget {
+      position: relative;
       align-items: center;
       justify-content: center;
       text-align: center;
@@ -77,6 +78,31 @@
     .load-indicator-ok { color: #66bb6a !important; }
     .load-indicator-fail { color: #ef5350 !important; }
     .load-indicator-pending { color: #8a9bae !important; }
+    .duck-speech {
+      position: absolute;
+      top: 0.75rem;
+      left: 0.75rem;
+      right: 0.75rem;
+      z-index: 10;
+      background: #2d2500;
+      border: 1px solid #ffd740;
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      color: #ffd740;
+      line-height: 1.45;
+      text-align: left;
+      display: none;
+    }
+    .duck-speech::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 2rem;
+      border: 7px solid transparent;
+      border-top-color: #ffd740;
+    }
+    .duck-speech-visible { display: block; }
     .ncentral-table { font-size: 0.8rem; }
     .ncentral-table th { color: #8a9bae; font-weight: 500; border-color: #33394a; }
     .ncentral-table td { border-color: #33394a; vertical-align: middle; }
@@ -271,6 +297,7 @@
     <div class="col-4 dashboard-widget-duck">
       <div class="widget duck-widget">
         <div class="duck-emoji"><img src="/static/cigar-duck_rev.png" alt="🦆" height="100%"></div>
+        <div class="duck-speech" id="duck-speech"></div>
       </div>
     </div>
 
@@ -397,8 +424,9 @@
     const loadedAt = new Date();
 
     try {
-      await loader();
+      const isMock = await loader();
       markWidgetLoadSuccess(widget, loadedAt);
+      setWidgetMockState(widget, !!isMock);
     } catch (error) {
       const reason = getWidgetErrorMessage(error);
       console.error(`Failed to load ${widget}: ${reason}`);
@@ -489,6 +517,7 @@
         },
       },
     });
+    return !!d._mock;
   }
 
   // ── Atera ──────────────────────────────────────────────────────────────────
@@ -508,6 +537,7 @@
       },
       options: { ...gridOpts(), plugins: { legend: { labels: { color: '#8a9bae' } } } },
     });
+    return !!d._mock;
   }
 
   // ── Vipre ──────────────────────────────────────────────────────────────────
@@ -530,6 +560,7 @@
       },
       options: { ...gridOpts(), plugins: { legend: { labels: { color: '#8a9bae' } } } },
     });
+    return !!d._mock;
   }
 
   // ── Backup ─────────────────────────────────────────────────────────────────
@@ -547,6 +578,7 @@
       },
       options: { plugins: { legend: { position: 'right', labels: { color: '#8a9bae' } } } },
     });
+    return !!d._mock;
   }
 
   // ── AD Metrics ────────────────────────────────────────────────────────────
@@ -565,6 +597,7 @@
       },
       options: { ...gridOpts(), plugins: { legend: { labels: { color: '#8a9bae' } } } },
     });
+    return !!d._mock;
   }
 
   // ── N-central ─────────────────────────────────────────────────────────────
@@ -583,6 +616,7 @@
         <td>${since}</td>
       </tr>`;
     }).join('');
+    return !!d._mock;
   }
 
   // ── Veeam ─────────────────────────────────────────────────────────────────
@@ -600,6 +634,7 @@
       },
       options: { plugins: { legend: { position: 'right', labels: { color: '#8a9bae' } } } },
     });
+    return !!d._mock;
   }
 
   // ── Weather ───────────────────────────────────────────────────────────────
@@ -628,6 +663,7 @@
       sourceElement.classList.add('weather-source-live');
       sourceElement.textContent = `✅ Live source (${d.source || 'openweather'})`;
     }
+    return !!(d._mock || d.fallback_used);
   }
 
   // ── Datetime ──────────────────────────────────────────────────────────────
@@ -694,6 +730,33 @@
     if (!duckSyncTimer) {
       duckSyncTimer = window.setInterval(() => runWidgetLoader('datetime', syncDatetime), 60000);
     }
+  }
+
+  // ── Mock bubble ─────────────────────────────────────────────────────────────
+  const mockedWidgets = new Map();
+
+  const widgetDisplayNames = {
+    wazuh: 'Wazuh', atera: 'Atera', vipre: 'Vipre AV',
+    backup: 'Backup', ad: 'AD Metrics', ncentral: 'N-central',
+    veeam: 'Veeam', weather: 'Weather',
+  };
+
+  function setWidgetMockState(widget, isMock) {
+    if (isMock) {
+      mockedWidgets.set(widget, widgetDisplayNames[widget] || widget);
+    } else {
+      mockedWidgets.delete(widget);
+    }
+    const bubble = document.getElementById('duck-speech');
+    if (!bubble) return;
+    if (mockedWidgets.size === 0) {
+      bubble.classList.remove('duck-speech-visible');
+      bubble.textContent = '';
+      return;
+    }
+    const names = [...mockedWidgets.values()].join(', ');
+    bubble.textContent = `Psst! Mock data for: ${names}`;
+    bubble.classList.add('duck-speech-visible');
   }
 
   // ── Boot ──────────────────────────────────────────────────────────────────

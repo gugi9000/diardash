@@ -124,6 +124,7 @@ async fn get_visa() -> Result<String, String> {
 }
 
 /// List all devices for the configured customer partner.
+#[allow(dead_code)]
 pub async fn get_devices_for_customer() -> Result<Vec<Value>, String> {
     dotenv().ok();
 

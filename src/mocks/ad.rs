@@ -2,6 +2,7 @@ use serde_json::{json, Value};
 
 pub fn payload() -> Value {
     json!({
+        "_mock": true,
         "password_expired": 14,
         "locked_out": 3,
         "history": [

@@ -4,4 +4,8 @@ NCENTRAL_ENDPOINT=https://foo
 DATABASE_URL=data/diardash.sqlite
 ATERA_API_KEY=''
 DEBUG=true
-
+COVE_USER=''
+COVE_PASSWORD=''
+COVE_ENDPOINT='https://api.backup.management/jsonapi'
+COVE_PARTNER=''
+COVE_CUSTOMER_ID=''
