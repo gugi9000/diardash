@@ -66,8 +66,8 @@ pub fn fetch_payload() -> Result<Value, String> {
 
 struct AdRecord {
     recorded_at: NaiveDateTime,
-    locked_out: i32,
     password_expired: i32,
+    locked_out: i32,
 }
 
 fn parse_records(content: &str) -> Result<Vec<AdRecord>, String> {
@@ -83,33 +83,33 @@ fn parse_records(content: &str) -> Result<Vec<AdRecord>, String> {
         let recorded_at_raw = parts
             .next()
             .ok_or_else(|| format!("Line {}: missing timestamp", index + 1))?;
-        let locked_out_raw = parts
-            .next()
-            .ok_or_else(|| format!("Line {}: missing LockedOut value", index + 1))?;
         let password_expired_raw = parts
             .next()
             .ok_or_else(|| format!("Line {}: missing Pwd Expired value", index + 1))?;
+        let locked_out_raw = parts
+            .next()
+            .ok_or_else(|| format!("Line {}: missing LockedOut value", index + 1))?;
 
         if parts.next().is_some() {
             return Err(format!(
-                "Line {}: expected 3 comma-separated fields (timestamp, LockedOut, Pwd Expired)",
+                "Line {}: expected 3 comma-separated fields (timestamp, Pwd Expired, LockedOut)",
                 index + 1
             ));
         }
 
         let recorded_at = NaiveDateTime::parse_from_str(recorded_at_raw, "%m/%d/%Y %H:%M:%S")
             .map_err(|error| format!("Line {}: invalid timestamp '{}': {error}", index + 1, recorded_at_raw))?;
-        let locked_out = locked_out_raw
-            .parse::<i32>()
-            .map_err(|error| format!("Line {}: invalid LockedOut '{}': {error}", index + 1, locked_out_raw))?;
         let password_expired = password_expired_raw
             .parse::<i32>()
             .map_err(|error| format!("Line {}: invalid Pwd Expired '{}': {error}", index + 1, password_expired_raw))?;
+        let locked_out = locked_out_raw
+            .parse::<i32>()
+            .map_err(|error| format!("Line {}: invalid LockedOut '{}': {error}", index + 1, locked_out_raw))?;
 
         records.push(AdRecord {
             recorded_at,
-            locked_out,
             password_expired,
+            locked_out,
         });
     }
 
