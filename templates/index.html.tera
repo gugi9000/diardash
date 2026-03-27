@@ -77,6 +77,14 @@
     .duck-emoji { font-size: 4rem; }
     .duck-date  { font-size: 1.1rem; font-weight: 600; margin-top: 0.5rem; }
     .duck-time  { font-size: 2.2rem; font-weight: 700; letter-spacing: 0.05em; }
+    .load-status-legend {
+      font-size: 0.6rem;
+      width: 100%;
+      margin-top: 1rem;
+      padding-top: 0.9rem;
+      border-top: 1px solid #33394a;
+      text-align: center;
+    }
     .load-status {
       width: 100%;
       margin-top: 1rem;
@@ -113,6 +121,7 @@
     }
     .load-indicator-ok { color: #66bb6a !important; }
     .load-indicator-fail { color: #ef5350 !important; }
+    .load-indicator-mock { color: #ffeb3b !important; }
     .load-indicator-pending { color: #8a9bae !important; }
     .duck-speech {
       position: absolute;
@@ -310,6 +319,7 @@
             <div class="load-status-item"><span>Weather</span><span id="loaded-weather" class="load-indicator-pending">⏳ —</span></div>
             <div class="load-status-item"><span>Date &amp; Time</span><span id="loaded-datetime" class="load-indicator-pending">⏳ —</span></div>
           </div>
+          <p class="load-status-legend">✅: loaded, ⛓️‍💥: mocks, ❌: failed to load</p>
         </div>
         </div>
       </div>
@@ -435,11 +445,12 @@
 
     const statusConfig = {
       ok:   { emoji: '✅', className: 'load-indicator-ok' },
+      mock: { emoji: '⛓️‍💥', className: 'load-indicator-mock' },
       fail: { emoji: '❌', className: 'load-indicator-fail' },
     };
 
     const config = statusConfig[status] || statusConfig.fail;
-    element.classList.remove('load-indicator-ok', 'load-indicator-fail', 'load-indicator-pending');
+    element.classList.remove('load-indicator-ok', 'load-indicator-fail', 'load-indicator-mock', 'load-indicator-pending');
     element.classList.add(config.className);
     const timeText = formatLoadedTime(loadedAt);
     const shortReason = status === 'fail' ? shortenErrorReason(reason) : '';
@@ -522,7 +533,11 @@
 
     try {
       const isMock = await loader();
-      markWidgetLoadSuccess(widget, loadedAt);
+      if (isMock) {
+        setWidgetLoadState(widget, 'mock', loadedAt, 'Mock data in use');
+      } else {
+        markWidgetLoadSuccess(widget, loadedAt);
+      }
       setWidgetMockState(widget, !!isMock);
     } catch (error) {
       const reason = getWidgetErrorMessage(error);
